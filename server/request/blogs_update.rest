@@ -1,0 +1,9 @@
+PUT http://localhost:3001/api/blogs/64f7fab88b237bec79aece43
+Content-Type: application/json
+
+{
+  "title": "Animales fantasticos",
+  "author": "Andrea Salas",
+  "url": "",
+  "likes": 40
+}

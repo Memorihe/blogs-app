@@ -1,0 +1,9 @@
+POST http://localhost:3001/api/blogs/
+Content-Type: application/json
+
+{
+  "title": "El hombre nuevo",
+  "author": "Joseph volka",
+  "url": "",
+  "likes": 5
+}
