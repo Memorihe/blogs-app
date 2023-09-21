@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js",
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "cross-env NODE_ENV=production node index.js",
+    "dev": "cross-env NODE_ENV=development nodemon index.js",
+    "test": "cross-env NODE_ENV=test jest --verbose --runInBand --watch",
+    "coverage": "jest run --coverage"
   },
   "author": "",
   "license": "ISC",
@@ -13,12 +14,21 @@
     "cors": "^2.8.5",
     "envdot": "^0.0.3",
     "express": "^4.18.2",
+    "express-async-errors": "^3.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
     "mongoose": "^7.5.0",
     "nodemon": "^3.0.1"
   },
   "devDependencies": {
-    "standard": "^17.1.0"
+    "cross-env": "^7.0.3",
+    "jest": "^29.6.4",
+    "standard": "^17.1.0",
+    "supertest": "^6.3.3"
   },
   "keywords": [],
-  "description": ""
+  "description": "",
+  "jest": {
+    "testEnvironment": "node"
+  }
 }

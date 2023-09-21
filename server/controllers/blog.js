@@ -1,55 +1,85 @@
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blogs')
+const User = require('../models/users')
+const jwt = require('jsonwebtoken')
+const middleware = require('../utils/middleware')
 
-blogsRouter.get('/', (request, response) => {
-  Blog.find({}).then((blogs) => response.json(blogs))
+blogsRouter.get('/', async (request, response) => {
+  const blogs = await Blog.find({})
+  response.json(blogs)
 })
 
-blogsRouter.post('/', (request, response, next) => {
-  const blog = request.body
+blogsRouter.post(
+  '/',
+  middleware.userAuthentication,
+  async (request, response, next) => {
+    const body = request.body
+    const userId = request.userId
 
-  const newBlog = new Blog({
-    title: blog.title,
-    author: blog.author,
-    url: blog.url,
-    likes: blog.likes
-  })
+    if (!body.title || !body.url)
+      return next({
+        name: 'ValidationError',
+        message: 'The title and URL are required'
+      })
 
-  blog
-    .save()
-    .then((savedBlog) => savedBlog.toJSON())
-    .then((formatedBlog) => response.json(formatedBlog))
-    .catch((err) => next(err))
-})
+    const user = await User.findById(userId)
+    if (!user) return next({ name: 'Unauthorized' })
 
-blogsRouter.get('/:id', (request, response, next) => {
+    const newBlog = new Blog({
+      title: body.title,
+      author: body.author,
+      url: body.url,
+      likes: body.likes | 0,
+      user: user.id
+    })
+
+    const blog = await newBlog.save()
+
+    user.blogs = user.blogs.concat(blog.id)
+    await user.save()
+
+    response.json(blog)
+  }
+)
+
+blogsRouter.get('/:id', async (request, response, next) => {
   const { id } = request.params
-  Blog.findById(id)
-    .then((blogs) => response.json(blogs))
-    .catch((err) => next(err))
+  const blogs = await Blog.findById(id)
+  response.json(blogs)
 })
 
-blogsRouter.delete('/:id', (request, response, next) => {
-  const { id } = request.params
-  Blog.findByIdAndDelete(id)
-    .then(() => response.status(200).end())
-    .catch((err) => next(err))
-})
+blogsRouter.delete('/:id', middleware.userAuthentication, async (request, response, next) => {
+    const { id } = request.params
+    const userId = request.userId
+    const user = await User.findById(userId)
+    if (!user) return next({ name: 'Unauthorized' })
+    const blog = await Blog.findById(id)
+    if (blog.user.toString() !== userId.toString()) return next({ name: 'Unauthorized' })
 
-blogsRouter.put('/:id', (request, response, next) => {
+    await Blog.findByIdAndDelete(id)
+    
+    response.status(200).end()
+  }
+)
+
+blogsRouter.put('/:id', middleware.userAuthentication, async (request, response, next) => {
   const { id } = request.params
-  const blog = request.body
+  const body = request.body
+  const userId = request.userId
+
+  const blog = await Blog.findById(id)  
+  if (blog.user.toString() !== userId.toString()) return next({ name: 'Unauthorized'})
 
   const newBlog = {
-    title: blog.title,
-    author: blog.author,
-    url: blog.url,
-    likes: blog.likes
-  }
+    title: body.title,
+    author: body.author,
+    url: body.url,
+    likes: body.likes,
+    user: userId
+  } 
 
-  Blog.findByIdAndUpdate(id, newBlog, { new: true })
-    .then((blog) => response.json(blog))
-    .catch((err) => next(err))
+  const blogRes = await Blog.findByIdAndUpdate(id, newBlog, { new: true })
+  response.json(blogRes)
 })
 
 module.exports = blogsRouter
